@@ -23,4 +23,5 @@ wget -O "$out" https://github.com/markschaake/ctcs-code-club/archive/master.zip 
 unzip "$out" -d "$dest_dir" || fail "Could not extract to destination"
 rm -rf "$final"
 mv "$dest" "$final"
+chmod +x "${final}/scripts/update.sh"
 cleanup && echo "SUCCESS"
