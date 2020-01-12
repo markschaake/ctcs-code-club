@@ -26,7 +26,7 @@ robot_height = robot_rect.height
 robotx = 10
 roboty = 10
 
-# VELOCITY represents have fast the character moves.  The number it is set to
+# VELOCITY represents how fast the character moves.  The number it is set to
 # is the number of pixels that the character can move during a single frame.
 # Try changing the velocity and see what happens.
 VELOCITY = 5
