@@ -184,7 +184,9 @@ class Player:
 
 
 display = Display()
-player = Player(display)
+player1 = Player(display)
+player2 = Player(display)
+player2.x = 100
 tiles = []
 
 # Add the floor tiles
@@ -194,6 +196,7 @@ for x in range(0, display.width, 50):
 # Add some tiles to jump up onto
 tiles.append(Tile(200, display.height - 100, BLUE))
 tiles.append(Tile(300, display.height - 200, BLUE))
+tiles.append(Tile(400, display.height - 300, BLUE))
 
 # Main game loop that is executed FPS times per second.
 # Each time through the loop is one frame in the game.
@@ -205,32 +208,43 @@ while True:
     # During each frame, the user may have pressed several keys.  We collect
     # each movement that the user indicated, and will pass those on to the
     # player instance so it may update accordingly.
-    movements = []
-    if pressed_keys[pygame.K_RIGHT]:
-        movements.append(player.MOVE_RIGHT)
-    if pressed_keys[pygame.K_LEFT]:
+    p1movements = []
+    p2movements = []
+    if pressed_keys[pygame.K_d]:
+        p1movements.append(player1.MOVE_RIGHT)
+    if pressed_keys[pygame.K_a]:
         # If both right and left keys are pressed, we just ignore both.
         # We know that if right has been pressed, then the movements
         # list will have a size of 1 element
-        if len(movements) == 1:
-            movements = []
+        if len(p1movements) == 1:
+            p1movements = []
         else:
-            movements.append(player.MOVE_LEFT)
-    if pressed_keys[pygame.K_SPACE]:
-        movements.append(player.JUMP)
+            p1movements.append(player1.MOVE_LEFT)
+    if pressed_keys[pygame.K_w]:
+        p1movements.append(player1.JUMP)
+
+    if pressed_keys[pygame.K_SEMICOLON]:
+        p2movements.append(player2.MOVE_RIGHT)
+    if pressed_keys[pygame.K_k]:
+        if len(p2movements) == 1:
+            p2movements = []
+        else:
+            p2movements.append(player1.MOVE_LEFT)
+    if pressed_keys[pygame.K_o]:
+        p2movements.append(player2.JUMP)
 
     # Process events that have happened since the last frame:
     for event in pygame.event.get():
-        # print(pygame.event.event_name(event.type))
-        # print(event)
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
     # Update the display
     display.clear()
-    player.update(movements, tiles)
-    player.render(display)
+    player1.update(p1movements, tiles)
+    player1.render(display)
+    player2.update(p2movements, tiles)
+    player2.render(display)
     for tile in tiles:
         tile.render(display)
     pygame.display.update()
