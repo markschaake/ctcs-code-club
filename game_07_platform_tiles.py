@@ -79,8 +79,11 @@ class Player:
     # How fast the player moves in each frame
     VELOCITY = 8
 
-    def __init__(self, display: Display):
+    def __init__(self, display: Display, move_left_key, move_right_key, jump_key):
         self.player_img = PLAYER_IDLE_IMG
+        self.move_left_key = move_left_key
+        self.move_right_key = move_right_key
+        self.jump_key = jump_key
         img_rect = self.player_img.get_rect()
         self.player_width = img_rect.width
         self.feet_width = self.player_width - 54
@@ -95,6 +98,7 @@ class Player:
         # If the player is jumping, we manage the y position using our jumping
         # algorithm.
         self.is_jumping = False
+        self.is_falling = False
         self.jumping_velocity = JUMP_START_VELOCITY
         self.jumping_mass = 2
 
@@ -134,7 +138,18 @@ class Player:
         return pygame.Rect(self.x + edge_buffer, self.y + self.player_height, self.feet_width, 1)
 
     # Update to be called during each frame
-    def update(self, movements, tiles: List[Tile]):
+    def update(self, pressed_keys, tiles: List[Tile]):
+        movements = []
+        if pressed_keys[self.move_right_key]:
+            movements.append(self.MOVE_RIGHT)
+        if pressed_keys[self.move_left_key]:
+            if len(movements) == 1:
+                movements = []
+            else:
+                movements.append(self.MOVE_LEFT)
+        if pressed_keys[self.jump_key]:
+            movements.append(self.JUMP)
+
         if len(movements) == 0:
             self.change_last_move(self.IDLE)
         for movement in movements:
@@ -142,7 +157,7 @@ class Player:
                 self.move_right()
             elif movement == self.MOVE_LEFT:
                 self.move_left()
-            elif movement == self.JUMP:
+            elif movement == self.JUMP and not self.is_falling:
                 self.jump()
 
         if self.is_jumping:
@@ -173,30 +188,33 @@ class Player:
             collide_idx = self.feet_rect().collidelist(tiles)
             if collide_idx == -1:
                 # Player is falling since there is no ground below
+                self.is_falling = True
                 self.y = self.y + self.GRAVITY
             else:
+                self.is_falling = False
                 self.y = tiles[collide_idx].y - self.player_height
 
     def render(self, display: Display):
-        pygame.draw.rect(display.surface, YELLOW, self.player_collide_rect())
+        #pygame.draw.rect(display.surface, YELLOW, self.player_collide_rect())
         display.surface.blit(self.player_img, (self.x, self.y))
-        pygame.draw.rect(display.surface, RED, self.feet_rect())
+        #pygame.draw.rect(display.surface, RED, self.feet_rect())
 
 
 display = Display()
-player1 = Player(display)
-player2 = Player(display)
-player2.x = 100
-tiles = []
+player1 = Player(display, pygame.K_a, pygame.K_d, pygame.K_w)
+player2 = Player(display, pygame.K_k, pygame.K_SEMICOLON, pygame.K_o)
+player2.x = display.width - player2.player_width
 
-# Add the floor tiles
-for x in range(0, display.width, 50):
-    tiles.append(Tile(x, display.height - GROUND_TILE_HEIGHT, BROWN))
-
-# Add some tiles to jump up onto
-tiles.append(Tile(200, display.height - 100, BLUE))
-tiles.append(Tile(300, display.height - 200, BLUE))
-tiles.append(Tile(400, display.height - 300, BLUE))
+def generate_tiles(display: Display):
+    tiles = []
+    # Add the floor tiles
+    for x in range(0, display.width, 50):
+        tiles.append(Tile(x, display.height - GROUND_TILE_HEIGHT, BROWN))
+    # Add some tiles to jump up onto
+    tiles.append(Tile(200, display.height - 100, BLUE))
+    tiles.append(Tile(300, display.height - 200, BLUE))
+    tiles.append(Tile(400, display.height - 300, BLUE))
+    return tiles
 
 # Main game loop that is executed FPS times per second.
 # Each time through the loop is one frame in the game.
@@ -204,34 +222,6 @@ while True:
     # Each time we execute a frame, we ask pygame to tell us the state of
     # all the keyboard keys:
     pressed_keys = pygame.key.get_pressed()
-
-    # During each frame, the user may have pressed several keys.  We collect
-    # each movement that the user indicated, and will pass those on to the
-    # player instance so it may update accordingly.
-    p1movements = []
-    p2movements = []
-    if pressed_keys[pygame.K_d]:
-        p1movements.append(player1.MOVE_RIGHT)
-    if pressed_keys[pygame.K_a]:
-        # If both right and left keys are pressed, we just ignore both.
-        # We know that if right has been pressed, then the movements
-        # list will have a size of 1 element
-        if len(p1movements) == 1:
-            p1movements = []
-        else:
-            p1movements.append(player1.MOVE_LEFT)
-    if pressed_keys[pygame.K_w]:
-        p1movements.append(player1.JUMP)
-
-    if pressed_keys[pygame.K_SEMICOLON]:
-        p2movements.append(player2.MOVE_RIGHT)
-    if pressed_keys[pygame.K_k]:
-        if len(p2movements) == 1:
-            p2movements = []
-        else:
-            p2movements.append(player1.MOVE_LEFT)
-    if pressed_keys[pygame.K_o]:
-        p2movements.append(player2.JUMP)
 
     # Process events that have happened since the last frame:
     for event in pygame.event.get():
@@ -241,12 +231,13 @@ while True:
 
     # Update the display
     display.clear()
-    player1.update(p1movements, tiles)
-    player1.render(display)
-    player2.update(p2movements, tiles)
-    player2.render(display)
+    tiles = generate_tiles(display)
     for tile in tiles:
         tile.render(display)
+    player1.update(pressed_keys, tiles)
+    player1.render(display)
+    player2.update(pressed_keys, tiles)
+    player2.render(display)
     pygame.display.update()
     # Use the FPS clock to maintain smooth animation
     FPS_CLOCK.tick(FPS)
